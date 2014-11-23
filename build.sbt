@@ -1,3 +1,5 @@
+sbtPlugin := true
+
 // Project name (artifact name in Maven)
 name := "ebean-jdk8-fix"
 
@@ -6,17 +8,12 @@ organization := "com.beowulfe.play"
 
 version := "3.3.1-SNAPSHOT"
 
+scalaVersion := "2.10.4"
+
 // project description
 description := "Fixes ebean for jdk8"
 
-// Enables publishing to maven repo
-publishMavenStyle := true
-
-// Do not append Scala versions to the generated artifacts
-crossPaths := false
-
-// This forbids including Scala related libraries into the dependency
-autoScalaLibrary := false
+publishMavenStyle := false
 
 // library dependencies. (orginization name) % (project name) % (version)
 libraryDependencies ++= Seq(
@@ -31,4 +28,5 @@ packageOptions := Seq(
   Package.ManifestAttributes("Can-Retransform-Classes" -> "true")
 )
 
+// JavaDoc compilation fails because of #link to external project
 sources in doc in Compile := List() 
