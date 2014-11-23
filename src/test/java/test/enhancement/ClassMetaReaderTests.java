@@ -21,7 +21,6 @@ public class ClassMetaReaderTests {
     ClassMeta classMeta = classMetaReader.get(true, "test.model.SomeClass", classLoader);
 
     Assert.assertNotNull(classMeta);
-    Assert.assertFalse(classMeta.hasPersistentFields());
     Assert.assertFalse(classMeta.isEntity());
   }
 
@@ -34,7 +33,6 @@ public class ClassMetaReaderTests {
     ClassMeta classMeta = classMetaReader.get(false, "test.model.NoEnhanceMappedSuper", classLoader);
     
     Assert.assertNotNull(classMeta);
-    Assert.assertFalse(classMeta.hasPersistentFields());
     Assert.assertFalse(classMeta.isEntity());
   }
   
@@ -47,7 +45,6 @@ public class ClassMetaReaderTests {
     ClassMeta classMeta = classMetaReader.get(false, "test.model.EnhanceMappedSuper", classLoader);
     
     Assert.assertNotNull(classMeta);
-    Assert.assertTrue(classMeta.hasPersistentFields());
     Assert.assertTrue(classMeta.isEntity());
   }
   
@@ -60,7 +57,6 @@ public class ClassMetaReaderTests {
     ClassMeta classMeta = classMetaReader.get(false, "test.model.EnhanceMappedSuperId", classLoader);
     
     Assert.assertNotNull(classMeta);
-    Assert.assertTrue(classMeta.hasPersistentFields());
     Assert.assertTrue(classMeta.isEntity());
   }
   

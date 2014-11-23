@@ -2,11 +2,9 @@ package test.enhancement;
 
 import com.avaje.ebean.enhance.ant.MainTransform;
 
-import java.io.IOException;
-
 public abstract class BaseTest {
 
-  static String[] transformArgs = { "target/test-classes", "test/model/**", "debug=9" };
+  static String[] transformArgs = { "target/scala-2.10/sbt-0.13/test-classes", "test/model/**", "debug=9" };
 
   static {
 //    try {

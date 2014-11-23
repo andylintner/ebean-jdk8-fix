@@ -11,6 +11,7 @@ import java.net.URLClassLoader;
 public class ClassPathClassBytesReader implements ClassBytesReader {
 	
 
+	
 	private final URL[] urls;
 	
 	public ClassPathClassBytesReader(URL[] urls) {
@@ -29,11 +30,13 @@ public class ClassPathClassBytesReader implements ClassBytesReader {
 			// read the class bytes, and define the class
 			URL url = cl.getResource(resource);
 			if (url == null) {
-				return null;
+				throw new RuntimeException("Class Resource not found for "+resource);
 			}
 	
 			is = url.openStream();
-			return InputStreamTransform.readBytes(is);
+			byte[] classBytes = InputStreamTransform.readBytes(is);
+
+			return classBytes;
 			
 		} catch (IOException e){
 			throw new RuntimeException("IOException reading bytes for "+className, e);
@@ -46,13 +49,6 @@ public class ClassPathClassBytesReader implements ClassBytesReader {
 					throw new RuntimeException("Error closing InputStream for "+className, e);
 				}
 			}
-      try {
-        cl.close();
-      } catch (NoSuchMethodError e) {
-        // ignoring as running in JDK6 
-      } catch (IOException e) {
-        throw new RuntimeException("Error closing URLClassLoader for "+className, e);
-      }
 		}
 	}
 	

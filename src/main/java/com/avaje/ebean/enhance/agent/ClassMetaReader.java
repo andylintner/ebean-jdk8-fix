@@ -1,9 +1,9 @@
 package com.avaje.ebean.enhance.agent;
 
-import com.avaje.ebean.enhance.asm.ClassReader;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import com.avaje.ebean.enhance.asm.ClassReader;
 
 /**
  * Reads class information as an alternative to using a ClassLoader.
@@ -15,7 +15,7 @@ import java.util.Map;
  */
 public class ClassMetaReader {
 
-	private final Map<String, ClassMeta> cache = new HashMap<String, ClassMeta>();
+	private Map<String, ClassMeta> cache = new HashMap<String, ClassMeta>();
 
 	private final EnhanceContext enhanceContext;
 
@@ -27,7 +27,8 @@ public class ClassMetaReader {
 		return getWithCache(readMethodAnnotations, name, classLoader);
 	}
 
-	private ClassMeta getWithCache(boolean readMethodAnnotations, String name, ClassLoader classLoader) throws ClassNotFoundException {
+	private ClassMeta getWithCache(boolean readMethodAnnotations, String name, ClassLoader classLoader)
+			throws ClassNotFoundException {
 		
 		synchronized (cache) {
 			ClassMeta meta = cache.get(name);
@@ -53,9 +54,7 @@ public class ClassMetaReader {
 			
 		byte[] classBytes = enhanceContext.getClassBytes(className, classLoader);
 		if (classBytes == null){
-		  if (enhanceContext.isLog(1)) {
-	      enhanceContext.log(null, "Could not read meta data for class ["+className+"].");		    
-		  }
+			enhanceContext.log(1, "Class ["+className+"] not found.");
 			return null;
 		} else {
 			if (enhanceContext.isLog(3)) {

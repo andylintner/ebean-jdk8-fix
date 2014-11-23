@@ -1,8 +1,13 @@
 package com.avaje.ebean.enhance.agent;
 
-import com.avaje.ebean.enhance.asm.*;
-
 import java.util.ArrayList;
+import java.util.HashSet;
+
+import com.avaje.ebean.enhance.asm.AnnotationVisitor;
+import com.avaje.ebean.enhance.asm.ClassVisitor;
+import com.avaje.ebean.enhance.asm.FieldVisitor;
+import com.avaje.ebean.enhance.asm.MethodVisitor;
+import com.avaje.ebean.enhance.asm.Opcodes;
 
 /**
  * ClassAdapter used to detect if this class needs enhancement for entity or
@@ -13,6 +18,8 @@ public class ClassAdapterDetectEnhancement extends ClassVisitor {
 	private final ClassLoader classLoader;
 	
 	private final EnhanceContext enhanceContext;
+
+	private final HashSet<String> classAnnotation = new HashSet<String>();
 
 	private final ArrayList<DetectMethod> methods = new ArrayList<DetectMethod>();
 
@@ -32,6 +39,26 @@ public class ClassAdapterDetectEnhancement extends ClassVisitor {
 		super(Opcodes.ASM5);
 		this.classLoader = classLoader;
 		this.enhanceContext = context;
+	}
+
+	public boolean isEntityOrTransactional() {
+		return entity || isTransactional();
+	}
+
+	public String getStatus() {
+		String s = "class: " + className;
+		if (isEntity()) {
+			s += " entity:true  enhanced:" + entityField;
+			s = "*" + s;
+
+		} else if (isTransactional()) {
+			s += " transactional:true  enhanced:" + enhancedTransactional;
+			s = "*" + s;
+
+		} else {
+			s = " " + s;
+		}
+		return s;
 	}
 
 	public boolean isLog(int level) {
@@ -70,7 +97,7 @@ public class ClassAdapterDetectEnhancement extends ClassVisitor {
 		if (transactional){
 			// implements transactional interface or
 			// transactional at class level
-			return true;
+			return transactional;
 		}
 		
 		// check each method...
@@ -105,12 +132,12 @@ public class ClassAdapterDetectEnhancement extends ClassVisitor {
 				enhancedTransactional = true;
 			
 			} else {
-				ClassMeta interfaceMeta = enhanceContext.getInterfaceMeta(interfaces[i], classLoader);
-				if (interfaceMeta != null && interfaceMeta.isTransactional()) {
+				ClassMeta intefaceMeta = enhanceContext.getInterfaceMeta(interfaces[i], classLoader);
+				if (intefaceMeta != null && intefaceMeta.isTransactional()) {
 					// implements transactional interface 
 					transactional = true;
 					if (isLog(9)) {
-						log("detected implements transactional interface " + interfaceMeta);
+						log("detected implements tranactional interface " + intefaceMeta);
 					}
 				}
 			}
@@ -131,6 +158,7 @@ public class ClassAdapterDetectEnhancement extends ClassVisitor {
 		if (isLog(8)){
 			log("visitAnnotation "+desc);					
 		}
+		classAnnotation.add(desc);
 		if (isEntityAnnotation(desc)){
 			// entity, embeddable or mappedSuperclass
 			if (isLog(5)){
@@ -174,7 +202,7 @@ public class ClassAdapterDetectEnhancement extends ClassVisitor {
 	 * enhanced (rather than solely relying on the EntityBean interface). 
 	 * <p>
 	 */
-	private boolean isEbeanFieldMarker(String name, String desc) {
+	private boolean isEbeanFieldMarker(String name, String desc, String signature) {
 		
 		if (name.equals(MarkerField._EBEAN_MARKER)){
 			if (!desc.equals("Ljava/lang/String;")){
@@ -196,7 +224,7 @@ public class ClassAdapterDetectEnhancement extends ClassVisitor {
 		
 		if ((access & Opcodes.ACC_STATIC) != 0) {
 			// static field...
-			if (isEbeanFieldMarker(name, desc)){
+			if (isEbeanFieldMarker(name, desc, signature)){
 				entityField = true;
 				if (isLog(1)){
 					log("Found ebean marker field "+name+" "+value);					

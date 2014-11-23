@@ -20,7 +20,7 @@ public class EnhanceContext {
 
 	private final boolean transientInternalFields;
 
-  private final boolean checkNullManyFields;
+    private final boolean checkNullManyFields;
 
 	private final ClassMetaReader reader;
 
@@ -34,11 +34,17 @@ public class EnhanceContext {
 
 	
 	/**
-	 * Construct a context for enhancement.
+	 * Construct a context for enhancement or subclass generation.
+	 * 
+	 * @param subclassing
+	 *            true if generating subclasses (false for javaagent etc)
+	 * @param agentArgs
+	 *            parameters for enhancement such as log level
 	 */
 	public EnhanceContext(ClassBytesReader classBytesReader, String agentArgs) {
 
 		this.ignoreClassHelper = new IgnoreClassHelper(agentArgs);
+		
 		this.agentArgsMap = ArgParser.parse(agentArgs);
 
 		this.logout = System.out;
@@ -56,9 +62,9 @@ public class EnhanceContext {
 			}
 		}
 
-    this.readOnly = getPropertyBoolean("readonly", false);
-    this.transientInternalFields = getPropertyBoolean("transientInternalFields", false);
-    this.checkNullManyFields = getPropertyBoolean("checkNullManyFields", true);
+        this.readOnly = getPropertyBoolean("readonly", false);		
+		this.transientInternalFields = getPropertyBoolean("transientInternalFields", false);
+        this.checkNullManyFields = getPropertyBoolean("checkNullManyFields", true);      
 	}
 	
 	public byte[] getClassBytes(String className, ClassLoader classLoader){
@@ -153,9 +159,9 @@ public class EnhanceContext {
 	/**
 	 * Log some debug output.
 	 */
-	public void log(int level, String className, String msg) {
+	public void log(int level, String msg) {
 		if (logLevel >= level) {
-		  log(className, msg);
+			logout.println(msg);
 		}
 	}
 	
@@ -163,7 +169,7 @@ public class EnhanceContext {
 		if (className != null) {
 			msg = "cls: " + className + "  msg: " + msg;
 		}
-		logout.println("ebean-enhance> " + msg);
+		logout.println("transform> " + msg);
 	}
 	
 	public boolean isLog(int level){
@@ -196,22 +202,22 @@ public class EnhanceContext {
 		return readOnly;
 	}
 
-  /**
-   * Return true if internal ebean fields in entity classes should be transient.
-   */
-  public boolean isTransientInternalFields() {
-    return transientInternalFields;
-  }
+	/**
+	 * Return true if internal ebean fields in entity classes should be transient.
+	 */
+    public boolean isTransientInternalFields() {
+        return transientInternalFields;
+    }
 
-  /**
-   * Return true if we should add null checking on *ToMany fields.
-   * <p>
-   * On getting a many that is null Ebean will create an empty List, Set or Map. If it is a
-   * ManyToMany it will turn on Modify listening.
-   * </p>
-   */
-  public boolean isCheckNullManyFields() {
-    return checkNullManyFields;
-  }
+    /**
+     * Return true if we should add null checking on *ToMany fields.
+     * <p>
+     * On getting a many that is null Ebean will create an empty List, Set or
+     * Map. If it is a ManyToMany it will turn on Modify listening.
+     * </p>
+     */
+    public boolean isCheckNullManyFields() {
+        return checkNullManyFields;
+    }
 
 }

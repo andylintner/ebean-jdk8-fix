@@ -1,13 +1,14 @@
 package com.avaje.ebean.enhance.agent;
 
-import com.avaje.ebean.enhance.asm.*;
-
 import java.io.PrintStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.lang.instrument.Instrumentation;
 import java.net.URL;
 import java.security.ProtectionDomain;
+
+import com.avaje.ebean.enhance.asm.ClassReader;
+import com.avaje.ebean.enhance.asm.ClassWriter;
 
 /**
  * A Class file Transformer that enhances entity beans.
@@ -37,7 +38,8 @@ public class Transformer implements ClassFileTransformer {
     }
   }
 
-  private static final int CLASS_WRITER_COMPUTEFLAGS = ClassWriter.COMPUTE_FRAMES + ClassWriter.COMPUTE_MAXS;
+  private static final int CLASS_WRITER_COMPUTEFLAGS = ClassWriter.COMPUTE_FRAMES
+      + ClassWriter.COMPUTE_MAXS;
 
   private final EnhanceContext enhanceContext;
 
@@ -61,6 +63,17 @@ public class Transformer implements ClassFileTransformer {
   }
 
   /**
+   * Override when you need transformation to occur with knowledge of other
+   * classes.
+   * <p>
+   * Note: Added to support Play framework.
+   * </p>
+   */
+  protected ClassWriter createClassWriter() {
+    return new ClassWriter(CLASS_WRITER_COMPUTEFLAGS);
+  }
+
+  /**
    * Change the logout to something other than system out.
    */
   public void setLogout(PrintStream logout) {
@@ -68,11 +81,7 @@ public class Transformer implements ClassFileTransformer {
   }
 
   public void log(int level, String msg) {
-    log(level, null, msg);
-  }
-  
-  private void log(int level, String className, String msg) {
-    enhanceContext.log(level, className, msg);
+    enhanceContext.log(level, msg);
   }
 
   public int getLogLevel() {
@@ -86,20 +95,20 @@ public class Transformer implements ClassFileTransformer {
 
       // ignore JDK and JDBC classes etc
       if (enhanceContext.isIgnoreClass(className)) {
-        log(9, className, "ignore class");
+        enhanceContext.log(9, "ignore class " + className);
         return null;
       }
 
       ClassAdapterDetectEnhancement detect = null;
 
       if (performDetect) {
-        log(5, className, "performing detection");
+        enhanceContext.log(5, "performing detection on " + className);
         detect = detect(loader, classfileBuffer);
       }
 
       if (detect == null) {
         // default only looks entity beans to enhance
-        log(1, className, "no detection so enhancing entity");
+        enhanceContext.log(1, "no detection so enhancing entity " + className);
         return entityEnhancement(loader, classfileBuffer);
       }
 
@@ -109,6 +118,7 @@ public class Transformer implements ClassFileTransformer {
           detect.log(1, "already enhanced entity");
 
         } else {
+          //
           detect.log(2, "performing entity transform");
           return entityEnhancement(loader, classfileBuffer);
         }
@@ -123,12 +133,13 @@ public class Transformer implements ClassFileTransformer {
           return transactionalEnhancement(loader, classfileBuffer);
         }
       }
-      log(9, className, "no enhancement on class");
+
+      enhanceContext.log(9, "no enhancement on class " + className);
       return null;
 
     } catch (NoEnhancementRequiredException e) {
       // the class is an interface
-      log(8, className, "No Enhancement required " + e.getMessage());
+      log(8, "No Enhancement required " + e.getMessage());
       return null;
 
     } catch (Exception e) {
@@ -145,8 +156,8 @@ public class Transformer implements ClassFileTransformer {
   private byte[] entityEnhancement(ClassLoader loader, byte[] classfileBuffer) {
 
     ClassReader cr = new ClassReader(classfileBuffer);
-    ClassWriter cw = new CLAwareClassWriter(CLASS_WRITER_COMPUTEFLAGS, loader);
-    ClassAdapterEntity ca = new ClassAdapterEntity(cw, loader, enhanceContext);
+    ClassWriter cw = createClassWriter();
+    ClassAdpaterEntity ca = new ClassAdpaterEntity(cw, loader, enhanceContext);
     try {
 
       cr.accept(ca, 0);
@@ -182,7 +193,7 @@ public class Transformer implements ClassFileTransformer {
   private byte[] transactionalEnhancement(ClassLoader loader, byte[] classfileBuffer) {
 
     ClassReader cr = new ClassReader(classfileBuffer);
-    ClassWriter cw = new CLAwareClassWriter(CLASS_WRITER_COMPUTEFLAGS, loader);
+    ClassWriter cw = createClassWriter();
     ClassAdapterTransactional ca = new ClassAdapterTransactional(cw, loader, enhanceContext);
 
     try {

@@ -7,13 +7,13 @@ import com.avaje.ebean.enhance.asm.Opcodes;
  * Reads the annotation information storing it in a AnnotationInfo.
  */
 public class AnnotationInfoVisitor extends AnnotationVisitor {
-
-	private final AnnotationInfo info;
 	
-	private final String prefix;
+	final AnnotationInfo info;
+	
+	final String prefix;
 	
 	public AnnotationInfoVisitor(String prefix, AnnotationInfo info, AnnotationVisitor av) {
-    super(Opcodes.ASM5, av);
+		super(Opcodes.ASM5, av);
 		this.info = info;
 		this.prefix = prefix;
 	}

@@ -26,7 +26,7 @@ public abstract class FinallyAdapter extends AdviceAdapter {
 		mv.visitMaxs(maxStack, maxLocals);
 	}
 
-	protected final void onMethodExit(int opcode) {
+	protected void onMethodExit(int opcode) {
 		if (opcode != ATHROW) {
 			onFinally(opcode);
 		}

@@ -8,9 +8,9 @@ import java.util.HashMap;
  */
 public class AnnotationInfo {
 
-  private final HashMap<String,Object> valueMap = new HashMap<String,Object>();
+	final HashMap<String,Object> valueMap = new HashMap<String,Object>();
 
-  private AnnotationInfo parent;
+	AnnotationInfo parent;
 	
 	/**
 	 * The parent is typically the class level annotation information

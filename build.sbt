@@ -18,7 +18,10 @@ publishMavenStyle := false
 // library dependencies. (orginization name) % (project name) % (version)
 libraryDependencies ++= Seq(
    "org.apache.ant" % "ant" % "1.7.0",
-   "javax.persistence" % "persistence-api" % "1.0"
+   "javax.persistence" % "persistence-api" % "1.0",
+   "org.slf4j" % "slf4j-api" % "1.7.2" % "test",
+   "junit" % "junit" % "4.8.2" % "test",
+   "com.novocode" % "junit-interface" % "0.9" % "test"
 )
 
 packageOptions := Seq(

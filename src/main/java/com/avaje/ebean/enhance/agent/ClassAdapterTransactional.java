@@ -1,32 +1,35 @@
 package com.avaje.ebean.enhance.agent;
 
-import com.avaje.ebean.enhance.asm.*;
-
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.avaje.ebean.enhance.asm.AnnotationVisitor;
+import com.avaje.ebean.enhance.asm.ClassVisitor;
+import com.avaje.ebean.enhance.asm.MethodVisitor;
+import com.avaje.ebean.enhance.asm.Opcodes;
 
 /**
  * ClassAdapter used to add transactional support.
  */
 public class ClassAdapterTransactional extends ClassVisitor {
 
-	private static final Logger logger = Logger.getLogger(ClassAdapterTransactional.class.getName());
+	static final Logger logger = Logger.getLogger(ClassAdapterTransactional.class.getName());
 
-	private final ArrayList<String> transactionalMethods = new ArrayList<String>();
+	final ArrayList<String> transactionalMethods = new ArrayList<String>();
 
-	private final EnhanceContext enhanceContext;
+	final EnhanceContext enhanceContext;
 
-	private final ClassLoader classLoader;
+	final ClassLoader classLoader;
 
-	private ArrayList<ClassMeta> transactionalInterfaces = new ArrayList<ClassMeta>();
+	ArrayList<ClassMeta> transactionalInterfaces = new ArrayList<ClassMeta>();
 
 	/**
 	 * Class level annotation information.
 	 */
-	private AnnotationInfo classAnnotationInfo;
+	AnnotationInfo classAnnotationInfo;
 
-	private String className;
+	String className;
 
 	public ClassAdapterTransactional(ClassVisitor cv, ClassLoader classLoader, EnhanceContext context) {
 		super(Opcodes.ASM5, cv);
@@ -42,10 +45,6 @@ public class ClassAdapterTransactional extends ClassVisitor {
 		enhanceContext.log(className, msg);
 	}
 
-  public AnnotationInfo getClassAnnotationInfo() {
-    return classAnnotationInfo;
-  }
-  
 	/**
 	 * Returns Transactional information from a matching interface method.
 	 * <p>
@@ -155,7 +154,9 @@ public class ClassAdapterTransactional extends ClassVisitor {
 
 	@Override
 	public void visitEnd() {
-		if (isLog(2)) {
+		if (isLog(3)){
+			
+		} else if (isLog(2)) {
 			log("methods:" + transactionalMethods);
 		}
 		super.visitEnd();

@@ -109,6 +109,6 @@ public interface EntityBean extends Serializable {
   /**
    * Return the field value with interception.
    */
-  public Object _ebean_getFieldIntercept(int fieldIndex);
+  public Object _ebean_getFieldIntercept(int fieldIndex, Object obj);
 
 }

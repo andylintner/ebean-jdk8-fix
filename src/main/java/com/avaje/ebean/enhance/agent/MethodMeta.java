@@ -2,13 +2,15 @@ package com.avaje.ebean.enhance.agent;
 
 public class MethodMeta {
 
-  private final String name;
-  private final String desc;
+	final int access;
+	final String name;
+	final String desc;
 	
-  private final AnnotationInfo annotationInfo;
+	final AnnotationInfo annotationInfo;
 	
 	public MethodMeta(AnnotationInfo classAnnotationInfo, int access, String name, String desc){
 		this.annotationInfo = new AnnotationInfo(classAnnotationInfo);
+		this.access = access;
 		this.name = name;
 		this.desc = desc;
 	}

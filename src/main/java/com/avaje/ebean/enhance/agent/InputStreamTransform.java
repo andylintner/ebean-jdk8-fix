@@ -19,15 +19,15 @@ import java.lang.instrument.IllegalClassFormatException;
  */
 public class InputStreamTransform {
 
-	private final Transformer transformer;
-	private final ClassLoader classLoader;
+	final Transformer transformer;
+	final ClassLoader classLoader;
 	
 	public InputStreamTransform(Transformer transformer, ClassLoader classLoader){
 		this.transformer = transformer;
 		this.classLoader = classLoader;
 	}
 	
-	public void log(int level, String msg) {
+	public void log(int level, String msg){
 		transformer.log(level, msg);
 	}
 	

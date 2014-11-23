@@ -1,6 +1,10 @@
 package com.avaje.ebean.enhance.agent;
 
-import com.avaje.ebean.enhance.asm.*;
+import com.avaje.ebean.enhance.asm.AnnotationVisitor;
+import com.avaje.ebean.enhance.asm.ClassVisitor;
+import com.avaje.ebean.enhance.asm.FieldVisitor;
+import com.avaje.ebean.enhance.asm.MethodVisitor;
+import com.avaje.ebean.enhance.asm.Opcodes;
 
 /**
  * ClassAdapter for enhancing entities.
@@ -11,7 +15,7 @@ import com.avaje.ebean.enhance.asm.*;
  * This is NOT used for subclass generation.
  * </p>
  */
-public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants {
+public class ClassAdpaterEntity extends ClassVisitor implements EnhanceConstants {
 		
 	private final EnhanceContext enhanceContext;
 	
@@ -21,7 +25,7 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 
 	private boolean firstMethod = true;
 
-	public ClassAdapterEntity(ClassVisitor cv, ClassLoader classLoader, EnhanceContext context) {
+	public ClassAdpaterEntity(ClassVisitor cv, ClassLoader classLoader, EnhanceContext context) {
 		super(Opcodes.ASM5, cv);
 		this.classLoader = classLoader;
 		this.enhanceContext = context;
@@ -46,7 +50,8 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 	/**
 	 * Create the class definition replacing the className and super class.
 	 */
-	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+	public void visit(int version, int access, String name, String signature, String superName,
+			String[] interfaces) {
 
 		classMeta.setClassName(name, superName);
 
@@ -71,15 +76,13 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 		} else {
 			// Add the EntityBean interface
 			c[c.length - 1] = C_ENTITYBEAN;
-      if (classMeta.isLog(8)) {
-        classMeta.log("... add EntityBean interface");
-      }
 		}
 		
 		if (!superName.equals("java/lang/Object")){
 			// read information about superClasses... 
 			if (classMeta.isLog(7)){
-				classMeta.log("read information about superClasses " + superName + " to see if it is entity/embedded/mappedSuperclass");
+				classMeta.log("read information about superClasses "+superName
+					+" to see if it is entity/embedded/mappedSuperclass");
 			}
 			ClassMeta superMeta = enhanceContext.getSuperMeta(superName, classLoader);
 			if (superMeta != null && superMeta.isEntity()){
@@ -93,7 +96,7 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 					if (superMeta == null){
 						classMeta.log("unable to read superMeta for "+superName);
 					} else {
-						classMeta.log("superMeta "+superName+" is not an entity/embedded/mappedsuperclass (with equals or persistent fields)");
+						classMeta.log("superMeta "+superName+" is not an entity/embedded/mappedsuperclass "+superMeta.getClassAnnotations());
 					}
 				}	
 			}
@@ -115,38 +118,51 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 	 * enhanced (rather than solely relying on the EntityBean interface). 
 	 * <p>
 	 */
-	private boolean isEbeanFieldMarker(String name) {
-		return name.equals(MarkerField._EBEAN_MARKER);
+	private boolean isEbeanFieldMarker(String name, String desc, String signature) {
+		
+		if (name.equals(MarkerField._EBEAN_MARKER)){
+			if (!desc.equals("Ljava/lang/String;")){
+				String m = "Error: _EBEAN_MARKER field of wrong type? "+desc;
+				classMeta.log(m);
+			}
+			return true;
+		}
+		return false;
 	}
 
-	private boolean isPropertyChangeListenerField(String desc) {
-		return desc.equals("Ljava/beans/PropertyChangeSupport;");
+	private boolean isPropertyChangeListenerField(String name, String desc, String signature) {
+		if (desc.equals("Ljava/beans/PropertyChangeSupport;")){
+			return true;
+		}
+		return false;
 	}
 	
 	/**
 	 * The ebeanIntercept field is added once but thats all. Note the other
 	 * fields are defined in the superclass.
 	 */
-	public FieldVisitor visitField(int access, String name, String desc, String signature, Object value) {
+	public FieldVisitor visitField(int access, String name, String desc, String signature,
+			Object value) {
 
 		if ((access & Opcodes.ACC_STATIC) != 0) {
 			// static field...
-      if (isEbeanFieldMarker(name)) {
-        classMeta.setAlreadyEnhanced(true);
-        if (isLog(2)) {
-          log("Found ebean marker field " + name + " " + value);
-        }
-      } else {
-        if (isLog(2)) {
-          log("Skip intercepting static field " + name);
-        }
-      }
+			if (isEbeanFieldMarker(name, desc, signature)){
+				classMeta.setAlreadyEnhanced(true);
+				if (isLog(2)){
+					log("Found ebean marker field "+name+" "+value);					
+				}				
+			} else {
+				if (isLog(2)){
+					log("Skip intercepting static field "+name);					
+				}
+			}
 
 			// no interception of static fields
 			return super.visitField(access, name, desc, signature, value);
 		}
 		
-		if (isPropertyChangeListenerField(desc)) {
+		if (isPropertyChangeListenerField(name, desc, signature)) {
+			//classMeta.setExistingPropertyChangeSupport(name);
 			if (isLog(1)){
 				classMeta.log("Found existing PropertyChangeSupport field "+name);
 			}
@@ -167,13 +183,14 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 		// get access to those 'real' private fields
 		FieldVisitor fv = super.visitField(access, name, desc, signature, value);
 		
-		return classMeta.createLocalFieldVisitor(fv, name, desc);
+		return classMeta.createLocalFieldVisitor(cv, fv, name, desc);
 	}
 
 	/**
 	 * Replace the method code with field interception.
 	 */
-	public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+	public MethodVisitor visitMethod(int access, String name, String desc, String signature,
+			String[] exceptions) {
 		
 		if (firstMethod){
 			if (!classMeta.isEntityEnhancementRequired()) {
@@ -191,11 +208,6 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 				log("... add marker field \""+marker+"\"");					
 			}
 			
-			IndexFieldWeaver.addPropertiesField(cv);
-			if (isLog(4)){
-        log("... add _ebean_props field");         
-      }
-			
 			if (!classMeta.isSuperClassEntity()){
 				// only add the intercept and identity fields if 
 				// the superClass is not also enhanced
@@ -212,28 +224,16 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 
 		classMeta.addExistingMethod(name, desc);
 		
-    if (isLog(4)) {
-      log("--- #### method name["+name+"] desc["+desc+"] sig["+signature+"]");
-    }
-    
-    if (isDefaultConstructor(name, desc)) {
-      // make sure the access is public
-      MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC, name, desc, signature, exceptions);
-      // also create the entityBeanIntercept object
-      return new ConstructorAdapter(mv, classMeta, desc);
-    }
+		if (isDefaultConstructor(name, desc)){
+		    // make sure the access is public
+	        MethodVisitor mv =  super.visitMethod(Opcodes.ACC_PUBLIC, name, desc, signature, exceptions);
+			// also create the entityBeanIntercept object
+			return new ConstructorAdapter(mv, classMeta, desc);
+		}
 
-    if (isStaticInit(name, desc)) {
-      if (isLog(4)) {
-        log("... --- #### enhance existing static init method");
-      }
-      MethodVisitor mv = super.visitMethod(Opcodes.ACC_STATIC, name, desc, signature, exceptions);
-      return new MethodStaticInitAdapter(mv, classMeta);
-    }
-        
-	  MethodVisitor mv =  super.visitMethod(access, name, desc, signature, exceptions);
+	    MethodVisitor mv =  super.visitMethod(access, name, desc, signature, exceptions);
 
-		if (interceptEntityMethod(access, name, desc)) {
+		if (interceptEntityMethod(access, name, desc, signature, exceptions)) {
 			// change the method replacing the relevant GETFIELD PUTFIELD with
 			// our special field methods with interception... 
 			return new MethodFieldAdapter(mv, classMeta, name+" "+desc);				
@@ -253,26 +253,14 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 			throw new NoEnhancementRequiredException();
 		}
 		
-		if (!classMeta.hasStaticInit()) {
-		  IndexFieldWeaver.addPropertiesInit(cv, classMeta);
-		}
-		
 		if (!classMeta.hasDefaultConstructor()){
-		  DefaultConstructor.add(cv, classMeta);
+		    DefaultConstructor.add(cv, classMeta);
 		}
 
 		MarkerField.addGetMarker(cv, classMeta.getClassName());
 		
-		if (isLog(4)){
-		  log("... add _ebean_getPropertyNames() and _ebean_getPropertyName()");
-		}
-		IndexFieldWeaver.addGetPropertyNames(cv, classMeta);
-		IndexFieldWeaver.addGetPropertyName(cv, classMeta);
-    
 		if (!classMeta.isSuperClassEntity()){
-	    if (isLog(8)){
-	      log("... add _ebean_getIntercept() and _ebean_setIntercept()");
-	    }
+			// Add the _ebean_getIntercept() _ebean_setIntercept() methods
 			InterceptField.addGetterSetter(cv, classMeta.getClassName());
 			
 			// Add add/removePropertyChangeListener methods
@@ -288,7 +276,7 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 		
 		MethodSetEmbeddedLoaded.addMethod(cv, classMeta);
 		MethodIsEmbeddedNewOrDirty.addMethod(cv, classMeta);
-    MethodNewInstance.addMethod(cv, classMeta);
+        MethodNewInstance.addMethod(cv, classMeta);
 		
 		// register with the agentContext
 		enhanceContext.addClassMeta(classMeta);
@@ -308,17 +296,8 @@ public class ClassAdapterEntity extends ClassVisitor implements EnhanceConstants
 		return false;
 	}
 	
-  private boolean isStaticInit(String name, String desc) {
-
-    if (name.equals("<clinit>") && desc.equals("()V")) {
-      classMeta.setHasStaticInit(true);
-      return true;
-    }
-
-    return false;
-  }
-	
-	private boolean interceptEntityMethod(int access, String name, String desc) {
+	private boolean interceptEntityMethod(int access, String name, String desc, String signature,
+			String[] exceptions) {
 
 		if ((access & Opcodes.ACC_STATIC) != 0) {
 			// no interception of static methods?

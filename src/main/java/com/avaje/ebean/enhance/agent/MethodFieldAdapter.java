@@ -15,13 +15,13 @@ import com.avaje.ebean.enhance.asm.Opcodes;
  */
 public class MethodFieldAdapter extends MethodVisitor implements Opcodes {
 
-	private final ClassMeta meta;
+	final ClassMeta meta;
 
-	private final String className;
+	final String className;
 
-	private final String methodDescription;
+	final String methodDescription;
 
-	private boolean transientAnnotation;
+	boolean transientAnnotation = false;
 
 	public MethodFieldAdapter(MethodVisitor mv, ClassMeta meta, String methodDescription) {
 		super(Opcodes.ASM5, mv);
@@ -52,9 +52,9 @@ public class MethodFieldAdapter extends MethodVisitor implements Opcodes {
 	}
 
 	@Override
-	public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
+	public void visitMethodInsn(int opcode, String owner, String name, String desc) {
 
-		super.visitMethodInsn(opcode, owner, name, desc, itf);
+		super.visitMethodInsn(opcode, owner, name, desc);
 	}
 
 	public void visitFieldInsn(int opcode, String owner, String name, String desc) {
@@ -89,7 +89,7 @@ public class MethodFieldAdapter extends MethodVisitor implements Opcodes {
 				meta.log("GETFIELD method:" + methodDescription 
 					+ " field:" + name + " > " + methodName + " "+ methodDesc);
 			}
-			super.visitMethodInsn(INVOKEVIRTUAL, className, methodName, methodDesc, false);
+			super.visitMethodInsn(INVOKEVIRTUAL, className, methodName, methodDesc);
 
 		} else if (opcode == Opcodes.PUTFIELD) {
 			String methodName = "_ebean_set_" + name;
@@ -98,7 +98,7 @@ public class MethodFieldAdapter extends MethodVisitor implements Opcodes {
 				meta.log("PUTFIELD method:" + methodDescription 
 					+ " field:" + name + " > " + methodName + " "+ methodDesc);
 			}
-			super.visitMethodInsn(INVOKEVIRTUAL, className, methodName, methodDesc, false);
+			super.visitMethodInsn(INVOKEVIRTUAL, className, methodName, methodDesc);
 
 		} else {
 			meta.log("Warning adapting method:" + methodDescription 
